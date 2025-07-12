@@ -271,7 +271,145 @@ def validate_index(index_path):
     index_file = os.path.join(index_path, "index.faiss")
     return os.path.exists(index_file) and os.path.exists(os.path.join(index_path, "index.pkl"))
 
-# 10. Background Processing Functions
+# 10. Enhanced PEAS Auto-Tuning System
+def auto_tune_peas_scores(user_key, learning_data, force_tune=False):
+    """
+    Enhanced PEAS auto-tuning system.
+    If PEAS sum = 4 or ceiling of any component = 4, then reduce total to 2 for auto-tuning.
+    """
+    try:
+        if user_key not in learning_data:
+            return False
+        
+        user_data = learning_data[user_key]
+        peas_scores = user_data.get("rep", {})
+        
+        # Extract PEAS component scores
+        perf_score = peas_scores.get("Performance", {}).get("score", 0.01)
+        env_score = peas_scores.get("Environment", {}).get("score", 0.5)
+        act_score = peas_scores.get("Actuators", {}).get("score", 0.1)
+        sens_score = peas_scores.get("Sensors", {}).get("score", 0.5)
+        
+        # Calculate current totals
+        current_sum = perf_score + env_score + act_score + sens_score
+        current_ceiling = max(math.ceil(perf_score), math.ceil(env_score), 
+                            math.ceil(act_score), math.ceil(sens_score))
+        
+        log_info(f"PEAS Analysis for {user_key}: Sum={current_sum:.3f}, Ceiling={current_ceiling}")
+        log_info(f"Components: P={perf_score:.3f}, E={env_score:.3f}, A={act_score:.3f}, S={sens_score:.3f}")
+        
+        # Check if auto-tuning is needed
+        needs_tuning = (abs(current_sum - 4.0) < 0.01) or (current_ceiling == 4) or force_tune
+        
+        if needs_tuning:
+            log_info(f"PEAS Auto-tuning triggered for {user_key}")
+            
+            # Reduce total to 2 for auto-tuning as per requirement
+            target_sum = 2.0
+            
+            # Calculate scaling factor to achieve target sum
+            if current_sum > 0:
+                scale_factor = target_sum / current_sum
+            else:
+                scale_factor = 0.5  # Default scaling
+            
+            # Apply scaling to all components
+            new_perf_score = round(perf_score * scale_factor, 3)
+            new_env_score = round(env_score * scale_factor, 3)
+            new_act_score = round(act_score * scale_factor, 3)
+            new_sens_score = round(sens_score * scale_factor, 3)
+            
+            # Ensure no component exceeds 1.0
+            new_perf_score = min(new_perf_score, 1.0)
+            new_env_score = min(new_env_score, 1.0)
+            new_act_score = min(new_act_score, 1.0)
+            new_sens_score = min(new_sens_score, 1.0)
+            
+            # Update the scores
+            user_data["rep"]["Performance"]["score"] = new_perf_score
+            user_data["rep"]["Environment"]["score"] = new_env_score
+            user_data["rep"]["Actuators"]["score"] = new_act_score
+            user_data["rep"]["Sensors"]["score"] = new_sens_score
+            
+            # Add tuning metadata
+            user_data["rep"]["last_tuning"] = datetime.now().isoformat()
+            user_data["rep"]["tuning_reason"] = "sum_4_or_ceiling_4"
+            user_data["rep"]["original_sum"] = current_sum
+            user_data["rep"]["tuned_sum"] = new_perf_score + new_env_score + new_act_score + new_sens_score
+            
+            log_info(f"PEAS Auto-tuning completed for {user_key}")
+            log_info(f"New components: P={new_perf_score:.3f}, E={new_env_score:.3f}, A={new_act_score:.3f}, S={new_sens_score:.3f}")
+            log_info(f"New sum: {user_data['rep']['tuned_sum']:.3f}")
+            
+            return True
+        else:
+            log_info(f"PEAS Auto-tuning not needed for {user_key}")
+            return False
+            
+    except Exception as e:
+        log_error(f"Error in PEAS auto-tuning for {user_key}: {e}")
+        return False
+
+def tune_peas_scores_batch():
+    """Batch tune PEAS scores for all users."""
+    try:
+        learning_data = get_learning_data_cached()
+        tuned_users = []
+        
+        for user_key in learning_data.keys():
+            if auto_tune_peas_scores(user_key, learning_data):
+                tuned_users.append(user_key)
+        
+        if tuned_users:
+            save_learning_data(learning_data)
+            log_info(f"PEAS batch tuning completed for {len(tuned_users)} users: {tuned_users}")
+        else:
+            log_info("PEAS batch tuning: No users required tuning")
+            
+        return tuned_users
+    except Exception as e:
+        log_error(f"Error in PEAS batch tuning: {e}")
+        return []
+
+def get_peas_status(user_key, learning_data):
+    """Get current PEAS status for a user."""
+    try:
+        if user_key not in learning_data:
+            return None
+        
+        user_data = learning_data[user_key]
+        peas_scores = user_data.get("rep", {})
+        
+        perf_score = peas_scores.get("Performance", {}).get("score", 0.01)
+        env_score = peas_scores.get("Environment", {}).get("score", 0.5)
+        act_score = peas_scores.get("Actuators", {}).get("score", 0.1)
+        sens_score = peas_scores.get("Sensors", {}).get("score", 0.5)
+        
+        current_sum = perf_score + env_score + act_score + sens_score
+        current_ceiling = max(math.ceil(perf_score), math.ceil(env_score), 
+                            math.ceil(act_score), math.ceil(sens_score))
+        
+        return {
+            "user": user_key,
+            "components": {
+                "Performance": perf_score,
+                "Environment": env_score,
+                "Actuators": act_score,
+                "Sensors": sens_score
+            },
+            "sum": current_sum,
+            "ceiling": current_ceiling,
+            "needs_tuning": (abs(current_sum - 4.0) < 0.01) or (current_ceiling == 4),
+            "last_tuning": peas_scores.get("last_tuning"),
+            "tuning_reason": peas_scores.get("tuning_reason"),
+            "original_sum": peas_scores.get("original_sum"),
+            "tuned_sum": peas_scores.get("tuned_sum")
+        }
+    except Exception as e:
+        log_error(f"Error getting PEAS status for {user_key}: {e}")
+        return None
+
+# 11. Background Processing Functions
 def create_faiss_index_background(pdf_path, user_folder):
     """Create FAISS index in background."""
     try:
@@ -326,6 +464,10 @@ def onboard_user_async(user_name, user_folder, answers):
             "username_verified": True,
             "chat_history": ""
         }
+        save_learning_data(learning_data)
+        
+        # Trigger initial PEAS auto-tuning for new user
+        auto_tune_peas_scores(user_key, learning_data, force_tune=True)
         save_learning_data(learning_data)
         
         # PDF processing in background
@@ -428,8 +570,11 @@ def generate_answer_optimized(llm, embedding_model, user_name, user_folder, quer
         # Generate response
         response = llm.generate([prompt]).generations[0][0].text.strip()
         
-        # Update user data in background
+        # Update user data in background and trigger PEAS auto-tuning
         executor.submit(update_user_interaction_background, user_name, query, response)
+        
+        # Trigger PEAS auto-tuning check
+        executor.submit(auto_tune_peas_scores, user_key, learning_data)
         
         return response, "primary"
         
@@ -567,6 +712,109 @@ def handle_query():
         log_error(f"Query error: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/peas_status', methods=['POST'])
+def get_peas_status_api():
+    """Get PEAS status for a user."""
+    try:
+        data = request.json
+        username = data.get('username')
+        if not username:
+            return jsonify({"success": False, "error": "Username is required"}), 400
+        
+        user_key = get_safe_username(username)
+        learning_data = get_learning_data_cached()
+        
+        peas_status = get_peas_status(user_key, learning_data)
+        if peas_status:
+            return jsonify({"success": True, "data": peas_status})
+        else:
+            return jsonify({"success": False, "error": "User not found"}), 404
+            
+    except Exception as e:
+        log_error(f"PEAS status error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/peas_tune', methods=['POST'])
+def tune_peas_api():
+    """Manually trigger PEAS auto-tuning for a user."""
+    try:
+        data = request.json
+        username = data.get('username')
+        force_tune = data.get('force_tune', False)
+        
+        if not username:
+            return jsonify({"success": False, "error": "Username is required"}), 400
+        
+        user_key = get_safe_username(username)
+        learning_data = get_learning_data_cached()
+        
+        # Perform auto-tuning
+        tuned = auto_tune_peas_scores(user_key, learning_data, force_tune=force_tune)
+        
+        if tuned:
+            save_learning_data(learning_data)
+            peas_status = get_peas_status(user_key, learning_data)
+            return jsonify({
+                "success": True, 
+                "message": "PEAS auto-tuning completed",
+                "data": peas_status
+            })
+        else:
+            return jsonify({
+                "success": True, 
+                "message": "PEAS auto-tuning not needed",
+                "data": get_peas_status(user_key, learning_data)
+            })
+            
+    except Exception as e:
+        log_error(f"PEAS tuning error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/peas_batch_tune', methods=['POST'])
+def batch_tune_peas_api():
+    """Batch tune PEAS scores for all users."""
+    try:
+        # Run batch tuning in background
+        tuned_users = tune_peas_scores_batch()
+        
+        return jsonify({
+            "success": True,
+            "message": f"PEAS batch tuning completed for {len(tuned_users)} users",
+            "tuned_users": tuned_users
+        })
+        
+    except Exception as e:
+        log_error(f"PEAS batch tuning error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/peas_overview', methods=['GET'])
+def peas_overview_api():
+    """Get PEAS overview for all users."""
+    try:
+        learning_data = get_learning_data_cached()
+        overview = []
+        
+        for user_key in learning_data.keys():
+            peas_status = get_peas_status(user_key, learning_data)
+            if peas_status:
+                overview.append(peas_status)
+        
+        # Sort by users needing tuning first
+        overview.sort(key=lambda x: x['needs_tuning'], reverse=True)
+        
+        return jsonify({
+            "success": True,
+            "data": {
+                "total_users": len(overview),
+                "users_needing_tuning": len([u for u in overview if u['needs_tuning']]),
+                "users": overview
+            }
+        })
+        
+    except Exception as e:
+        log_error(f"PEAS overview error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 # 13. Directory Initialization
 def initialize_directories():
     """Create necessary directories and initialize log file."""
@@ -578,6 +826,28 @@ def initialize_directories():
         log_error(f"Failed to initialize directories: {e}")
         raise RuntimeError(f"Directory initialization failed: {e}")
 
+# 14. Scheduled PEAS Auto-Tuning
+def schedule_peas_auto_tuning():
+    """Schedule periodic PEAS auto-tuning."""
+    import threading
+    import time
+    
+    def run_periodic_tuning():
+        while True:
+            try:
+                # Run PEAS auto-tuning every 6 hours
+                time.sleep(6 * 3600)  # 6 hours in seconds
+                log_info("Running scheduled PEAS auto-tuning...")
+                tuned_users = tune_peas_scores_batch()
+                log_info(f"Scheduled PEAS auto-tuning completed for {len(tuned_users)} users")
+            except Exception as e:
+                log_error(f"Scheduled PEAS auto-tuning failed: {e}")
+    
+    # Start the background thread
+    tuning_thread = threading.Thread(target=run_periodic_tuning, daemon=True)
+    tuning_thread.start()
+    log_info("PEAS auto-tuning scheduler started (runs every 6 hours)")
+
 if __name__ == "__main__":
     try:
         initialize_directories()
@@ -586,7 +856,10 @@ if __name__ == "__main__":
             log_error(f"Startup error: {model_init_result}")
             sys.exit(1)
         
-        log_info("Starting optimized chatbot server...")
+        # Start PEAS auto-tuning scheduler
+        schedule_peas_auto_tuning()
+        
+        log_info("Starting optimized chatbot server with PEAS auto-tuning...")
         app.run(debug=True, host='0.0.0.0', port=5000)
     except Exception as e:
         log_error(f"Main execution failed: {e}")
