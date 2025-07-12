@@ -1,0 +1,36 @@
+# pip install <package>
+os
+re
+json
+shutil
+hashlib
+platform
+time
+warnings
+pytz
+torch
+requests
+numpy
+cv2
+logging
+sys
+math
+tempfile
+traceback
+collections
+datetime
+sklearn
+langchain_community
+langchain_text_splitter
+langchain_community.vectorstores
+langchain_huggingface
+langchain_ollama
+flask
+flask_cors
+pycountry
+faiss-cpu  # Use faiss-gpu if CUDA is available
+# for ubuntu os 
+sudo apt update
+sudo apt install -y python3.11 python3-pip build-essential curl
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs

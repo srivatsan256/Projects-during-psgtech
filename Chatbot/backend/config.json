@@ -1,0 +1,39 @@
+{
+    "chunk_size": 300,
+    "video_max_resolution": [
+        640,
+        480
+    ],
+    "hsv_ranges": {
+        "red1_lower": [
+            0,
+            70,
+            50
+        ],
+        "red1_upper": [
+            10,
+            255,
+            255
+        ],
+        "red2_lower": [
+            160,
+            70,
+            50
+        ],
+        "red2_upper": [
+            180,
+            255,
+            255
+        ],
+        "green_lower": [
+            40,
+            40,
+            40
+        ],
+        "green_upper": [
+            80,
+            255,
+            255
+        ]
+    }
+}
