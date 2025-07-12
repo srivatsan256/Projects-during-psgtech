@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>P2P Blockchain</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        h1,
+        h2 {
+            color: #333;
+        }
+
+        #chain-data {
+            background: white;
+            padding: 10px;
+            border: 1px solid #ddd;
+            max-height: 300px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        input,
+        button {
+            margin: 5px;
+            padding: 8px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>P2P Blockchain Network</h1>
+
+        <div id="chain-status">
+            <h2>Blockchain Status</h2>
+            <pre id="chain-data">Loading...</pre>
+        </div>
+
+        <div id="transaction-form">
+            <h2>Add Transaction</h2>
+            <input type="text" id="sender" placeholder="Sender" />
+            <input type="text" id="recipient" placeholder="Recipient" />
+            <input type="number" id="amount" placeholder="Amount" min="0" />
+            <button onclick="addTransaction()">Add Transaction</button>
+        </div>
+
+        <div id="mine-block" style="margin-top:20px;">
+            <h2>Mine Block</h2>
+            <button onclick="mineBlock()">Mine</button>
+        </div>
+
+        <div id="nodes" style="margin-top:20px;">
+            <h2>Register Node</h2>
+            <input type="text" id="node-address" placeholder="Node address (e.g., localhost:5001)" />
+            <button onclick="registerNode()">Register</button>
+        </div>
+
+        <div id="message" class="status"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:5000'; // Change this if your backend URL is different
+
+        const chainDataEl = document.getElementById('chain-data');
+        const messageEl = document.getElementById('message');
+
+        async function fetchChain() {
+            try {
+                const response = await fetch(`${BASE_URL}/chain`);
+                if (!response.ok) throw new Error('Failed to fetch chain');
+                const data = await response.json();
+                chainDataEl.textContent = JSON.stringify(data, null, 2);
+                showMessage('Blockchain updated.', false);
+            } catch (error) {
+                chainDataEl.textContent = 'Error loading blockchain data.';
+                showMessage(error.message, true);
+            }
+        }
+
+        async function addTransaction() {
+            const sender = document.getElementById('sender').value.trim();
+            const recipient = document.getElementById('recipient').value.trim();
+            const amount = Number(document.getElementById('amount').value);
+
+            if (!sender || !recipient || isNaN(amount) || amount <= 0) {
+                showMessage('Please fill all transaction fields with valid data.', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/transaction/new`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sender, recipient, amount }),
+                });
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text || 'Failed to add transaction');
+                }
+                showMessage('Transaction added successfully.', false);
+                clearTransactionInputs();
+                fetchChain();
+            } catch (error) {
+                showMessage(error.message, true);
+            }
+        }
+
+        async function mineBlock() {
+            try {
+                const response = await fetch(`${BASE_URL}/mine`);
+                if (!response.ok) throw new Error('Failed to mine block');
+                showMessage('Block mined successfully!', false);
+                fetchChain();
+            } catch (error) {
+                showMessage(error.message, true);
+            }
+        }
+
+        async function registerNode() {
+            const node = document.getElementById('node-address').value.trim();
+            if (!node) {
+                showMessage('Please enter a node address.', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/nodes/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nodes: [node] }),
+                });
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text || 'Failed to register node');
+                }
+                showMessage('Node registered successfully.', false);
+                document.getElementById('node-address').value = '';
+                fetchChain();
+            } catch (error) {
+                showMessage(error.message, true);
+            }
+        }
+
+        function clearTransactionInputs() {
+            document.getElementById('sender').value = '';
+            document.getElementById('recipient').value = '';
+            document.getElementById('amount').value = '';
+        }
+
+        function showMessage(msg, isError) {
+            messageEl.textContent = msg;
+            messageEl.className = isError ? 'status error' : 'status';
+            setTimeout(() => {
+                messageEl.textContent = '';
+            }, 5000);
+        }
+
+        // Initial load
+        fetchChain();
+    </script>
+</body>
+
+</html>
