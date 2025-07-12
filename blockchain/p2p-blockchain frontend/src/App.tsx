@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from './hooks/useTheme';
-import { useBlockchain } from './hooks/useBlockchain';
+import { useBlockchainApi } from './hooks/useBlockchainApi';
 import { NetworkVisualization } from './components/NetworkVisualization';
 import { BlockchainExplorer } from './components/BlockchainExplorer';
 import { TransactionPanel } from './components/TransactionPanel';
@@ -18,8 +18,10 @@ function App() {
     startMining,
     toggleNodeStatus,
     syncAllNodes,
-    getSelectedNodeData
-  } = useBlockchain();
+    getSelectedNodeData,
+    isLoading,
+    error
+  } = useBlockchainApi();
 
   const selectedNodeData = getSelectedNodeData();
 
@@ -37,7 +39,7 @@ function App() {
                   Blockchain P2P Network
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-200">
-                  Interactive blockchain simulation with peer-to-peer consensus
+                  Live blockchain integration with Flask backend
                 </p>
               </div>
             </div>
@@ -58,6 +60,18 @@ function App() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 rounded-lg">
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+        
+        {isLoading && (
+          <div className="mb-6 p-4 bg-blue-100 dark:bg-blue-900 border border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-200 rounded-lg">
+            <strong>Loading...</strong> Processing blockchain operation
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <NetworkVisualization
             nodes={nodes}
