@@ -8,12 +8,14 @@
     "scheme": "classrepai",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "sdkVersion": "53.0.0",
     "updates": {
-      "url": "https://u.expo.dev/your-project-id"
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yourcompany.classrepai"
@@ -23,7 +25,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.yourcompany.classrepai"
+      "package": "com.yourcompany.classrepai",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -34,12 +37,7 @@
       "expo-router", 
       "expo-font", 
       "expo-web-browser",
-      [
-        "expo-updates",
-        {
-          "username": "your-expo-username"
-        }
-      ],
+      "expo-updates",
       [
         "expo-notifications",
         {
@@ -51,11 +49,6 @@
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "eas": {
-        "projectId": "your-project-id"
-      }
     }
   }
 }
