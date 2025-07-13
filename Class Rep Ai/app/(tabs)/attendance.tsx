@@ -4,8 +4,20 @@ import { useData } from '@/context/DataContext';
 import { useTheme } from '@/context/ThemeContext';
 import { CircleCheck as CheckCircle, Circle as XCircle, TriangleAlert as AlertTriangle, Download, MessageCircle, Share } from 'lucide-react-native';
 
+// Create 22N series (201-269, excluding 248)
+const create22NSeries = () => {
+  const numbers = [];
+  for (let i = 201; i <= 269; i++) {
+    if (i !== 248) {
+      numbers.push({ number: i, prefix: '22N' });
+    }
+  }
+  return numbers;
+};
+
 const VALID_ROLL_NUMBERS = [
-  { number: 269, prefix: '22N' },
+  ...create22NSeries(),
+  // 23N series: 431-436
   { number: 431, prefix: '23N' },
   { number: 432, prefix: '23N' },
   { number: 433, prefix: '23N' },
@@ -23,10 +35,21 @@ export default function AttendanceScreen() {
   const [showExceptionModal, setShowExceptionModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [exceptionReason, setExceptionReason] = useState('');
+  const [subjectName, setSubjectName] = useState('');
 
   useEffect(() => {
     loadStudents();
     loadAttendance();
+  }, [selectedDate]);
+
+  // Auto-refresh every 20 minutes
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      loadStudents();
+      loadAttendance();
+    }, 20 * 60 * 1000); // 20 minutes in milliseconds
+
+    return () => clearInterval(refreshInterval);
   }, [selectedDate]);
 
   const loadStudents = async () => {
@@ -64,6 +87,7 @@ export default function AttendanceScreen() {
       date: selectedDate,
       status,
       reason: reason || '',
+      subject: subjectName,
     };
 
     await saveAttendance(record);
@@ -284,6 +308,12 @@ export default function AttendanceScreen() {
           onChangeText={setSelectedDate}
           placeholder="YYYY-MM-DD"
         />
+        <TextInput
+          style={styles.subjectInput}
+          value={subjectName}
+          onChangeText={setSubjectName}
+          placeholder="Subject Name"
+        />
       </View>
 
       {/* Statistics Summary */}
@@ -448,6 +478,15 @@ const createStyles = (theme: any) => StyleSheet.create({
     padding: 12,
     backgroundColor: theme.surface,
     color: theme.text,
+  },
+  subjectInput: {
+    borderWidth: 1,
+    borderColor: theme.border,
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: theme.surface,
+    color: theme.text,
+    marginTop: 12,
   },
   statsContainer: {
     flexDirection: 'row',
