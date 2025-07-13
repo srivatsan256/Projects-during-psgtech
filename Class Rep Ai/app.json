@@ -1,54 +1,21 @@
 {
   "expo": {
-    "name": "Class Rep AI",
-    "slug": "class-rep-ai",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "classrepai",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "sdkVersion": "53.0.0",
-    "updates": {
-      "fallbackToCacheTimeout": 0,
-      "checkAutomatically": "ON_LOAD"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.classrepai"
-    },
     "android": {
+      "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FFFFFF"
       },
-      "package": "com.yourcompany.classrepai",
-      "versionCode": 1
+      "targetSdkVersion": 33,
+      "package": "com.vatsonr256.boltexpostarter"
     },
-    "web": {
-      "bundler": "metro",
-      "output": "single",
-      "favicon": "./assets/images/favicon.png"
+    "ios": {
+      "bundleIdentifier": "com.vatsonr256.boltexpostarter"
     },
-    "plugins": [
-      "expo-router", 
-      "expo-font", 
-      "expo-web-browser",
-      "expo-updates",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/notification-icon.png",
-          "color": "#ffffff",
-          "defaultChannel": "default"
-        }
-      ]
-    ],
-    "experiments": {
-      "typedRoutes": true
+    "extra": {
+      "eas": {
+        "projectId": "0c12582b-08ef-4b7a-a967-cfde351c99fb"
+      }
     }
   }
 }
