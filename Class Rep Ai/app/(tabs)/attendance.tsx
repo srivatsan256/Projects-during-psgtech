@@ -5,8 +5,13 @@ import { useTheme } from '@/context/ThemeContext';
 import { CircleCheck as CheckCircle, Circle as XCircle, TriangleAlert as AlertTriangle, Download, MessageCircle, Share } from 'lucide-react-native';
 
 const VALID_ROLL_NUMBERS = [
-  ...Array.from({ length: 69 }, (_, i) => 201 + i).filter(n => n !== 248),
-  431, 432, 433, 434, 435, 436
+  { number: 269, prefix: '22N' },
+  { number: 431, prefix: '23N' },
+  { number: 432, prefix: '23N' },
+  { number: 433, prefix: '23N' },
+  { number: 434, prefix: '23N' },
+  { number: 435, prefix: '23N' },
+  { number: 436, prefix: '23N' }
 ];
 
 export default function AttendanceScreen() {
@@ -28,8 +33,8 @@ export default function AttendanceScreen() {
     let studentList = await getStudents();
     if (studentList.length === 0) {
       // Initialize with valid roll numbers
-      studentList = VALID_ROLL_NUMBERS.map(rollNo => ({
-        rollNumber: `22N${rollNo}`,
+      studentList = VALID_ROLL_NUMBERS.map(rollData => ({
+        rollNumber: `${rollData.prefix}${rollData.number}`,
       }));
       // Save to storage for future use
       for (const student of studentList) {
