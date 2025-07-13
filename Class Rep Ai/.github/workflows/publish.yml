@@ -1,0 +1,47 @@
+name: Publish OTA Update
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Setup Expo CLI
+      run: npm install -g @expo/cli
+      
+    - name: Login to Expo
+      run: npx expo login --username ${{ secrets.EXPO_USERNAME }} --password ${{ secrets.EXPO_PASSWORD }}
+      
+    - name: Publish OTA Update
+      run: npx expo publish --non-interactive --max-workers 1
+      env:
+        EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        
+    - name: Notify on Success
+      if: success()
+      run: |
+        echo "✅ OTA update published successfully!"
+        echo "Users will receive the update on their next app launch."
+        
+    - name: Notify on Failure
+      if: failure()
+      run: |
+        echo "❌ OTA update failed to publish."
+        echo "Please check the logs for more information."

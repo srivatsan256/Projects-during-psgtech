@@ -32,7 +32,7 @@
     "expo-status-bar": "~2.2.2",
     "expo-symbols": "~0.4.3",
     "expo-system-ui": "~5.0.5",
-    "expo-web-browser": "~14.1.5",
+    "expo-web-browser": "~14.2.0",
     "lucide-react-native": "^0.475.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -45,7 +45,11 @@
     "react-native-svg": "15.11.2",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-web": "^0.20.0",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "expo-updates": "~0.28.17",
+    "expo-auth-session": "~6.2.1",
+    "expo-crypto": "~14.1.5",
+    "expo-notifications": "~0.31.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

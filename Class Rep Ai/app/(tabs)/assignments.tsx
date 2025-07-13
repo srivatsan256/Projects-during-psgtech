@@ -1,9 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Modal, Alert, Linking } from 'react-native';
 import { useData } from '@/context/DataContext';
 import { useTheme } from '@/context/ThemeContext';
-import { Plus, Calendar, List, CreditCard as Edit, Trash2, ExternalLink, Bell } from 'lucide-react-native';
+import { Plus, Calendar, List, CreditCard as Edit, Trash2, ExternalLink, Bell, Share, MessageCircle } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Notifications from 'expo-notifications';
+
+// Configure notification handler
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 export default function AssignmentsScreen() {
   const { getAssignments, saveAssignment, deleteAssignment, exportAssignments } = useData();
@@ -13,6 +25,7 @@ export default function AssignmentsScreen() {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [editingAssignment, setEditingAssignment] = useState<any>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [notificationEnabled, setNotificationEnabled] = useState(false);
 
   const [formData, setFormData] = useState({
     subject: '',
@@ -25,11 +38,47 @@ export default function AssignmentsScreen() {
 
   useEffect(() => {
     loadAssignments();
+    setupNotifications();
   }, []);
 
   const loadAssignments = async () => {
     const assignmentList = await getAssignments();
     setAssignments(assignmentList);
+  };
+
+  const setupNotifications = async () => {
+    // Request permissions
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Please enable notifications to receive daily assignment reminders.');
+      return;
+    }
+
+    setNotificationEnabled(true);
+    await scheduleDailyNotification();
+  };
+
+  const scheduleDailyNotification = async () => {
+    // Cancel existing notifications
+    await Notifications.cancelAllScheduledNotificationsAsync();
+
+    // Schedule daily notification at 17:45
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Daily Assignment Reminder',
+        body: 'Time to share today\'s assignment details with your classmates!',
+        sound: 'default',
+        data: { action: 'share_assignments' },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+        hour: 17,
+        minute: 45,
+        repeats: true,
+      },
+    });
+
+    console.log('Daily notification scheduled for 17:45');
   };
 
   const resetForm = () => {
@@ -46,6 +95,7 @@ export default function AssignmentsScreen() {
 
   const handleSave = async () => {
     if (!formData.subject.trim() || !formData.requirement.trim()) {
+      Alert.alert('Error', 'Please fill in subject and requirement fields.');
       return;
     }
 
@@ -72,26 +122,107 @@ export default function AssignmentsScreen() {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteAssignment(id);
-    await loadAssignments();
+    Alert.alert(
+      'Delete Assignment',
+      'Are you sure you want to delete this assignment?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            await deleteAssignment(id);
+            await loadAssignments();
+          }
+        }
+      ]
+    );
   };
 
   const handleExport = async () => {
     await exportAssignments();
   };
 
+  const shareAssignmentToWhatsApp = async (assignment: any) => {
+    const message = `📚 *Assignment Update*\n\n` +
+      `📘 **Subject:** ${assignment.subject}\n` +
+      `📝 **Requirement:** ${assignment.requirement}\n` +
+      `📅 **Due Date:** ${assignment.dueDate}\n` +
+      `📋 **Details:** ${assignment.details}\n` +
+      `${assignment.uploadType ? `📎 **Upload:** ${assignment.uploadType}\n` : ''}` +
+      `${assignment.uploadLink ? `🔗 **Link:** ${assignment.uploadLink}\n` : ''}\n` +
+      `⏰ *Shared at ${new Date().toLocaleTimeString()}*`;
+
+    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+    
+    try {
+      const supported = await Linking.canOpenURL(whatsappUrl);
+      if (supported) {
+        await Linking.openURL(whatsappUrl);
+      } else {
+        Alert.alert('WhatsApp not found', 'Please install WhatsApp to share assignments.');
+      }
+    } catch (error) {
+      console.error('Error sharing to WhatsApp:', error);
+      Alert.alert('Error', 'Could not share to WhatsApp. Please try again.');
+    }
+  };
+
+  const shareAllAssignmentsToWhatsApp = async () => {
+    if (assignments.length === 0) {
+      Alert.alert('No Assignments', 'There are no assignments to share.');
+      return;
+    }
+
+    const todayAssignments = assignments.filter(a => {
+      const today = new Date().toISOString().split('T')[0];
+      return a.dueDate === today || new Date(a.dueDate) > new Date();
+    });
+
+    if (todayAssignments.length === 0) {
+      Alert.alert('No Upcoming Assignments', 'There are no upcoming assignments to share.');
+      return;
+    }
+
+    let message = `📚 *Daily Assignment Summary*\n`;
+    message += `📅 ${new Date().toLocaleDateString()}\n\n`;
+
+    todayAssignments.forEach((assignment, index) => {
+      message += `${index + 1}. 📘 **${assignment.subject}**\n`;
+      message += `   📝 ${assignment.requirement}\n`;
+      message += `   📅 Due: ${assignment.dueDate}\n`;
+      if (assignment.uploadType) {
+        message += `   📎 ${assignment.uploadType}\n`;
+      }
+      message += `\n`;
+    });
+
+    message += `⏰ *Shared at ${new Date().toLocaleTimeString()}*`;
+
+    const whatsappUrl = `whatsapp://send?text=${encodeURIComponent(message)}`;
+    
+    try {
+      const supported = await Linking.canOpenURL(whatsappUrl);
+      if (supported) {
+        await Linking.openURL(whatsappUrl);
+      } else {
+        Alert.alert('WhatsApp not found', 'Please install WhatsApp to share assignments.');
+      }
+    } catch (error) {
+      console.error('Error sharing to WhatsApp:', error);
+      Alert.alert('Error', 'Could not share to WhatsApp. Please try again.');
+    }
+  };
+
   const sendAssignmentNotification = (assignment: any) => {
     Alert.alert(
       'Send Assignment Notification',
-      `Send notification for: ${assignment.subject} - ${assignment.requirement}?`,
+      `Share "${assignment.subject}" assignment details via WhatsApp?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
-          text: 'Send', 
-          onPress: () => {
-            // Here you would implement the actual notification sending logic
-            Alert.alert('Success', 'Assignment notification sent to all students!');
-          }
+          text: 'Share', 
+          onPress: () => shareAssignmentToWhatsApp(assignment)
         }
       ]
     );
@@ -141,6 +272,15 @@ export default function AssignmentsScreen() {
         </View>
       </View>
 
+      {notificationEnabled && (
+        <View style={styles.notificationBanner}>
+          <Bell size={16} color="#16A34A" />
+          <Text style={styles.notificationText}>
+            Daily reminders set for 17:45 to share assignments
+          </Text>
+        </View>
+      )}
+
       <ScrollView style={styles.content}>
         {viewMode === 'list' ? (
           assignments.map((assignment) => (
@@ -148,6 +288,9 @@ export default function AssignmentsScreen() {
               <View style={styles.assignmentHeader}>
                 <Text style={styles.subject}>📘 {assignment.subject}</Text>
                 <View style={styles.actions}>
+                  <TouchableOpacity onPress={() => shareAssignmentToWhatsApp(assignment)}>
+                    <MessageCircle size={20} color="#25D366" />
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={() => sendAssignmentNotification(assignment)}>
                     <Bell size={20} color="#16A34A" />
                   </TouchableOpacity>
@@ -166,7 +309,10 @@ export default function AssignmentsScreen() {
                 <View style={styles.uploadInfo}>
                   <Text style={styles.uploadType}>📎 {assignment.uploadType}</Text>
                   {assignment.uploadLink && (
-                    <TouchableOpacity style={styles.linkButton}>
+                    <TouchableOpacity 
+                      style={styles.linkButton}
+                      onPress={() => Linking.openURL(assignment.uploadLink)}
+                    >
                       <ExternalLink size={16} color="#2563EB" />
                       <Text style={styles.linkText}>Open Link</Text>
                     </TouchableOpacity>
@@ -190,9 +336,17 @@ export default function AssignmentsScreen() {
         )}
       </ScrollView>
 
-      <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
-        <Text style={styles.exportButtonText}>Export to WhatsApp</Text>
-      </TouchableOpacity>
+      <View style={styles.bottomButtons}>
+        <TouchableOpacity style={styles.exportButton} onPress={handleExport}>
+          <Share size={20} color="#FFFFFF" />
+          <Text style={styles.exportButtonText}>Export All</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.whatsappButton} onPress={shareAllAssignmentsToWhatsApp}>
+          <MessageCircle size={20} color="#FFFFFF" />
+          <Text style={styles.whatsappButtonText}>Share to WhatsApp</Text>
+        </TouchableOpacity>
+      </View>
 
       <Modal visible={showModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
@@ -430,12 +584,51 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   exportButton: {
     backgroundColor: '#16A34A',
-    margin: 24,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    flex: 1,
   },
   exportButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  notificationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E0F2F7',
+    padding: 12,
+    margin: 12,
+    borderRadius: 8,
+    borderLeftWidth: 5,
+    borderLeftColor: '#16A34A',
+  },
+  notificationText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#16A34A',
+    fontWeight: '600',
+  },
+  bottomButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    margin: 24,
+    marginTop: 0,
+    gap: 12,
+  },
+  whatsappButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#25D366',
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+    flex: 1,
+  },
+  whatsappButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
