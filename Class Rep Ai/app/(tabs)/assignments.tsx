@@ -47,38 +47,45 @@ export default function AssignmentsScreen() {
   };
 
   const setupNotifications = async () => {
-    // Request permissions
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission denied', 'Please enable notifications to receive daily assignment reminders.');
-      return;
-    }
+    try {
+      // Request permissions
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Please enable notifications to receive daily assignment reminders.');
+        return;
+      }
 
-    setNotificationEnabled(true);
-    await scheduleDailyNotification();
+      setNotificationEnabled(true);
+      await scheduleDailyNotification();
+    } catch (error) {
+      console.error('Error setting up notifications:', error);
+    }
   };
 
   const scheduleDailyNotification = async () => {
-    // Cancel existing notifications
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    try {
+      // Cancel existing notifications
+      await Notifications.cancelAllScheduledNotificationsAsync();
 
-    // Schedule daily notification at 17:45
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Daily Assignment Reminder',
-        body: 'Time to share today\'s assignment details with your classmates!',
-        sound: 'default',
-        data: { action: 'share_assignments' },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-        hour: 17,
-        minute: 45,
-        repeats: true,
-      },
-    });
+      // Schedule daily notification at 17:45
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Daily Assignment Reminder',
+          body: 'Time to share today\'s assignment details with your classmates!',
+          sound: 'default',
+          data: { action: 'share_assignments' },
+        },
+        trigger: {
+          hour: 17,
+          minute: 45,
+          repeats: true,
+        } as any,
+      });
 
-    console.log('Daily notification scheduled for 17:45');
+      console.log('Daily notification scheduled for 17:45');
+    } catch (error) {
+      console.error('Error scheduling notification:', error);
+    }
   };
 
   const resetForm = () => {
@@ -498,6 +505,22 @@ const createStyles = (theme: any) => StyleSheet.create({
     padding: 8,
     borderRadius: 8,
   },
+  notificationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E0F2F7',
+    padding: 12,
+    margin: 12,
+    borderRadius: 8,
+    borderLeftWidth: 5,
+    borderLeftColor: '#16A34A',
+  },
+  notificationText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#16A34A',
+    fontWeight: '600',
+  },
   content: {
     flex: 1,
     paddingHorizontal: 24,
@@ -582,6 +605,13 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: theme.text,
     marginTop: 4,
   },
+  bottomButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    margin: 24,
+    marginTop: 0,
+    gap: 12,
+  },
   exportButton: {
     backgroundColor: '#16A34A',
     padding: 16,
@@ -595,29 +625,6 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  notificationBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E0F2F7',
-    padding: 12,
-    margin: 12,
-    borderRadius: 8,
-    borderLeftWidth: 5,
-    borderLeftColor: '#16A34A',
-  },
-  notificationText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#16A34A',
-    fontWeight: '600',
-  },
-  bottomButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    margin: 24,
-    marginTop: 0,
-    gap: 12,
   },
   whatsappButton: {
     flexDirection: 'row',
