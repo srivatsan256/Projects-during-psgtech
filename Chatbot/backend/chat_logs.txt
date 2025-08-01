@@ -1,0 +1,39 @@
+=== Onboarding Prompts ===
+- What's your full name?
+- What is your inverter model? (Please enter exactly as shown in available models)
+- What is your serial number?
+- What is the installed date? (YYYY-MM-DD)
+- What is your country?
+- Please enter your inverter installed area PIN code
+- What is your full address?
+=== Log Starts Here ===
+[2025-08-01 15:10:39] [INFO] Created and initialized log file: /Users/srivatsan/Desktop/Projects-during-psgtech/Chatbot/backend/chat_logs.txt
+------------------------------------------------------------
+[2025-08-01 15:10:39] [INFO] Created directories: /Users/srivatsan/Desktop/Projects-during-psgtech/Chatbot/backend/user_data, /Users/srivatsan/Desktop/Projects-during-psgtech/Chatbot/backend/service_manual
+------------------------------------------------------------
+[2025-08-01 15:10:39] [INFO] Using MPS (Apple Silicon GPU)
+------------------------------------------------------------
+[2025-08-01 15:10:39] [INFO] Ollama server is running at http://localhost:11434
+------------------------------------------------------------
+[2025-08-01 15:10:45] [INFO] Models initialized successfully.
+------------------------------------------------------------
+[2025-08-01 15:10:45] [INFO] initialize_models took 5.65 seconds
+------------------------------------------------------------
+[2025-08-01 15:10:45] [INFO] PEAS auto-tuning scheduler started (runs every 6 hours)
+------------------------------------------------------------
+[2025-08-01 15:10:45] [INFO] Starting optimized chatbot server with PEAS auto-tuning...
+------------------------------------------------------------
+[2025-08-01 15:10:46] [INFO] Created directories: /Users/srivatsan/Desktop/Projects-during-psgtech/Chatbot/backend/user_data, /Users/srivatsan/Desktop/Projects-during-psgtech/Chatbot/backend/service_manual
+------------------------------------------------------------
+[2025-08-01 15:10:46] [INFO] Using MPS (Apple Silicon GPU)
+------------------------------------------------------------
+[2025-08-01 15:10:46] [INFO] Ollama server is running at http://localhost:11434
+------------------------------------------------------------
+[2025-08-01 15:10:51] [INFO] Models initialized successfully.
+------------------------------------------------------------
+[2025-08-01 15:10:51] [INFO] initialize_models took 5.57 seconds
+------------------------------------------------------------
+[2025-08-01 15:10:51] [INFO] PEAS auto-tuning scheduler started (runs every 6 hours)
+------------------------------------------------------------
+[2025-08-01 15:10:51] [INFO] Starting optimized chatbot server with PEAS auto-tuning...
+------------------------------------------------------------
